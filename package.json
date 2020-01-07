@@ -1,0 +1,20 @@
+{
+  "name": "r-geometric",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mohammadFeiz/r-geometric.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mohammadFeiz/r-geometric/issues"
+  },
+  "homepage": "https://github.com/mohammadFeiz/r-geometric#readme"
+}
