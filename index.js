@@ -129,7 +129,8 @@ export default class RGeometric{
       return points;
     }
 
-    this.getLineBySLA = (p1,length,angle)=>{
+    this.getLineBySLA = (p1,length,angle)=>{  
+      if(!length){return [p1,p1]}
       return [p1,[p1[0]+(Math.cos(angle * Math.PI / 180) * length),p1[1] + (Math.sin(angle * Math.PI / 180) * length)]];
     }
 
