@@ -1,210 +1,328 @@
-export default class RGeometric{
-  constructor(){
-    this.getAvg = (arr)=>{
-      var x = 0,y = 0,length = arr.length;
-      for(var i = 0; i < length; i++){ x += arr[i][0]; y += arr[i][1]; }
-      return [x / length,y / length]
-    }
-
-    this.getDip = (p1,p2,prep)=>{
-      var dip = (p1[1] - p2[1]) / (p1[0] - p2[0]); 
-      dip = prep?-1/dip:dip;
-      if(dip === -Infinity){dip = Math.abs(Infinity)} 
+export default function RGeometric(){
+  var a = {
+    fix(value){return parseFloat(value.toFixed(6))},
+    getNumberByStep(number,step){return Math.round(number / step) * step;},
+    getLength(line){
+      var {x1,y1,x2,y2} = line;
+      return Math.sqrt(Math.pow(x1 - x2,2) + Math.pow(y1 - y2,2))
+    },
+    getAvg(points){
+      let totalX = 0,totalY = 0;
+      for(let i = 0; i < points.length; i++){
+        let [x,y] = points[i];
+        totalX += x; totalY += y;
+      }
+      return [totalX / points.length,totalY / points.length]
+    },
+    getDip(line){
+      var {x1,y1,x2,y2} = line;
+      var deltaY = this.fix(y1 - y2),deltaX = this.fix(x1 - x2); 
+      var dip = deltaY / deltaX;
+      dip = parseFloat(dip.toFixed(6)); 
+      dip = isNaN(dip)?0:dip;
       return dip;
-    } 
-
-    this.getArcBy3Points = (p1,p2,p3)=>{  
-      var meet = this.getMeet(this.getAvg([p1,p2]),this.getDip(p1,p2,true),this.getAvg([p2,p3]),this.getDip(p2,p3,true));  
-      if(!meet){return false};
-      var [x,y] = meet;
-      var a1 = this.getAngle(meet,p1);
-      var a2 = this.getAngle(meet,p2);
-      var a3 = this.getAngle(meet,p3);
-      if(a1 < a2 && a2 < a3){var slice = [a1,a3]}  
-      else if(a2 < a3 && a3 < a1){var slice = [a1,a3]}
-      else if(a3 < a1 && a1 < a2){var slice = [a1,a3]}
-      else if(a3 < a2 && a2 < a1){var slice = [a3,a1]}
-      else if(a1 < a3 && a3 < a2){var slice = [a3,a1]}
-      else if(a2 < a1 && a1 < a3){var slice = [a3,a1]}
-      else {var slice = [0,0]}
-      return {x,y,r:this.getLength(p1,[x,y]),slice};
-    }
-
-    this.getLength = (p1,p2)=>{
-      return Math.sqrt(Math.pow(p1[0] - p2[0],2) + Math.pow(p1[1] - p2[1],2))
-    }
-
-    this.getAngle = (a,b)=>{
-      var deltaX = b[0] - a[0],deltaY = b[1] - a[1];
-      var length = this.getLength(a,b);
-      var angle = Math.acos(deltaX / this.getLength(a,b)) / Math.PI * 180;
-      angle = Math.sign(deltaY) < 0?360 - angle:angle;
-      return parseFloat(angle.toFixed(4));
-    }
-
-    this.getPointOfLine = (a,b,obj)=>{
-      if(typeof a !== 'object' || typeof obj !== 'object'){return false}
-      var typeB = typeof b;
-      var dip = typeB === 'object'?this.getDip(a,b):b;
-      var {x,y} = obj;  
-      if(dip === Infinity){return y === undefined?false:[a[0],y]}
-      if(dip === 0){return x === undefined?false:[x,a[1]]}
-      if(x !== undefined){return [x,dip * (x - a[0]) + a[1]]}
-      if(y !== undefined){return [(y - a[1]) / dip + a[0],y]}
-      return false;
-    }
-
-    this.getMeet = (a1,a2,b1,b2)=>{ 
-      if(!Array.isArray(a1) || !Array.isArray(b1)){return false}
-      var dip1 = Array.isArray(a2)?this.getDip(a1,a2):a2;
-      var dip2 = Array.isArray(b2)?this.getDip(b1,b2):b2; 
+    },
+    getPrepDip(line){var dip = this.getDip(line); dip = -1 / dip; return dip;},
+    getYOnLineByX(line,x){
+      var {dip = this.getDip(line),x1,y1} = line;
+      if(dip === Infinity){return false}
+      return dip * (x - x1) + y1;
+    },
+    getXOnLineByY(line,y){ // get {y,line} or {y,point,dip}
+      var {dip = this.getDip(line),x1,y1} = line;
+      if(dip === 0){return false}
+      if(dip === Infinity){return x1}
+      return (y - y1) / dip + x1;
+    },
+    getMeet(line1,line2){ //get {line1,line2} or {point1,point2,dip1,dip2}
+      var {dip:dip1=this.getDip(line1)} = line1,{dip:dip2=this.getDip(line2)} = line2; 
       if(dip1 === dip2){return false}
-      if(dip1 === Infinity){return this.getPointOfLine(b1,dip2,{x:a1[0]})}
-      if(dip2 === Infinity){return this.getPointOfLine(a1,dip1,{x:b1[0]})}
-      var x = ((dip1 * a1[0]) - (dip2 * b1[0]) + b1[1] - a1[1]) / (dip1 - dip2);
-      var y = dip1 * (x - a1[0]) + a1[1];
+      if(Math.abs(dip1) === Infinity){return [line1.x1,this.getYOnLineByX(line2,line1.x1)]}
+      if(Math.abs(dip2) === Infinity){return [line2.x1,this.getYOnLineByX(line1,line2.x1)]}
+      var x = ((dip1 * line1.x1) - (dip2 * line2.x1) + line2.y1 - line1.y1) / (dip1 - dip2);
+      var y = dip1 * (x - line1.x1) + line1.y1;
       return [x,y]
-    }
-
-    this.divide = (p1,p2, count)=>{ 
-      var deltaX = p2[0] - p1[0],deltaY = p2[1] - p1[1];
-      var dX = deltaX / count,dY = deltaY / count;
-      var points = [];
-      for (var i = 1; i < count; i++) {
-          points.push([i * dX + p1[0],i * dY + p1[1]]);
+    },
+    getPrepToLine(line,point){
+      var {dip = this.getDip(line),x1,y1} = line;
+      var prepDip = this.getPrepDip(line);
+      var prep = this.getMeet({x1,y1,dip},{x1:point[0],y1:point[1],dip:prepDip});
+      return prep
+    },
+    getPrepFromLine(line,point,offset){
+      if(!offset){return point;}
+      var angle = this.getAngle(line);
+      var {x2,y2} = this.getLineBySLA(point,offset,angle - 90)
+      return [x2,y2];
+    },
+    getAngle(line){
+      var deltaX = line.x2 - line.x1,deltaY = line.y2 - line.y1;
+      var length = this.getLength({x1:0,y1:0,x2:deltaX,y2:deltaY});
+      var angle = Math.acos(deltaX / length) / Math.PI * 180;
+      return this.fix(Math.sign(deltaY) < 0?360 - angle:angle);
+    },
+    getCos(angle){
+      if(angle === 90 || angle === 270){return 0}
+      return Math.cos(angle * Math.PI / 180);
+    },
+    getSin(angle){
+      if(angle === 180 || angle === 360){return 0}
+      return Math.sin(angle * Math.PI / 180);
+    },
+    getLineBySLA(point,length,angle){  
+      if(!length){return {x1:point[0],y1:point[1],x2:point[0],y2:point[1]}}
+      return {x1:point[0],y1:point[1],x2:point[0]+(this.getCos(angle) * length),y2:point[1] + (this.getSin(angle) * length)}
+    },
+    setLineByLength(line,length,side = 'end'){
+      var p1,p2,start,angle = this.getAngle(line);
+      if(side === 'center'){
+        start = this.getAvg([[line.x1,line.y1],[line.x2,line.y2]]);
+        let l1 = this.getLineBySLA(start,length / 2,angle + 180);
+        let l2 = this.getLineBySLA(start,length / 2,angle);
+        p1 = [l1.x2,l1.y2];
+        p2 = [l2.x2,l2.y2];
       }
-      return points;    
-    }
-
-    this.getPrependicularPointToLine = (p1,p2, p)=>{
-      var dip = this.getDip(p1,p2);
-      var x,y;
-      if (dip === 0) {y = p1[1]; x = p[0];} 
-      else if (dip === Infinity) {y = p[1],x = p1[0];} 
-      else {
-        x = ((p[0] / dip) + (dip * p1[0]) + p[1] - p1[1]) / (dip + (1 / dip));
-        y = (dip * x) - (dip * p1[0]) + p1[1];
+      else if(side === 'end'){
+        p1 = [line.x1,line.y1];
+        let l = this.getLineBySLA(p1,length,angle);
+        p2 = [l.x2,l.y2];
       }
-      return [x,y];
-    }
-
-    this.getPrependicularPointFromLine = (p1,p2,p,offset)=>{
-      if(p === 'center'){p = this.getAvg(p1,p2)}
-      else if(p === 'start'){p = p1;}
-      else if(p === 'end'){p = p2;}
-      if(!offset){return p;}
-      var angle = this.getAngle(p1,p2);
-      var deltaX = offset * Math.cos((angle - 90) * Math.PI / 180);
-      var deltaY = offset * Math.sin((angle - 90) * Math.PI / 180);
-      return {x:p[0] + deltaX,y:p[1] + deltaY,deltaX,deltaY}
-    }
-
-    this.getParallelLine = (points,offset,close)=>{
+      else if(side === 'start'){
+        p2 = [line.x2,line.y2];
+        let l = this.getLineBySLA(p2,length,angle + 180);
+        p1 = [l.x2,l.y2]
+      }
+      return {x1:p1[0],y1:p1[1],x2:p2[0],y2:p2[1]};
+    },
+    getParallelLine(points,offset,close){
       var lines = [];
       var length = points.length;
-      close = length < 3?false:close;
-      for(var i = 0; i < length; i++){
-          if(i === 0 && !close){continue;}
+      if(length === 2){
+        let p1 = this.getPrepFromLine({x1:points[0][0],y1:points[0][1],x2:points[1][0],y2:points[1][1]},points[0],offset);
+        let p2 = this.getPrepFromLine({x1:points[0][0],y1:points[0][1],x2:points[1][0],y2:points[1][1]},points[1],offset);
+        return [p1,p2];
+      }
+      for(var i = 1; i <= length; i++){
           var point = points[i];
-          var beforePoint = points[i - 1] || points[length - 1]; 
-          var {deltaX,deltaY} = this.getPrependicularPointFromLine(beforePoint,point,'start',offset,);
-          lines.push([
-            [beforePoint[0] + deltaX,beforePoint[1] + deltaY,beforePoint[2]?(beforePoint[2] + offset < 0?0:beforePoint[2] + offset):undefined],  
-            [point[0] + deltaX,point[1] + deltaY,point[2]?(point[2] + offset < 0?0:point[2] + offset):undefined],
-          ]);
+          var beforePoint = points[i - 1];
+          if(i === length){
+            if(close){point = points[0]}
+            else{break;}
+          }
+          var p1 = this.getPrepFromLine({x1:beforePoint[0],y1:beforePoint[1],x2:point[0],y2:point[1]},beforePoint,offset);
+          var p2 = this.getPrepFromLine({x1:beforePoint[0],y1:beforePoint[1],x2:point[0],y2:point[1]},point,offset);
+          lines.push({x1:p1[0],y1:p1[1],x2:p2[0],y2:p2[1]});
       }
       var points = [];
       length = lines.length;
       for(var i = 0; i < length; i++){
           var line = lines[i];
-          var beforeLine = false;
-          if(i === 0){beforeLine = close?lines[length - 1]:false;}
-          else{beforeLine = lines[i - 1]}
-          var beforeMeet = beforeLine?this.getMeet(beforeLine[0],beforeLine[1],line[0],line[1]):false;
-          line[0][0] = beforeMeet?beforeMeet[0]:line[0][0];
-          line[0][1] = beforeMeet?beforeMeet[1]:line[0][1];
-          points.push(line[0]);
-          if(i === length - 1 && !close){points.push(line[1]);}
+          var beforeLine = lines[i - 1];
+          if(i === 0){
+            if(!close){points.push([line.x1,line.y1]); continue}
+            beforeLine = lines[lines.length - 1];
+          }
+          var meet = this.getMeet(beforeLine,line);
+          points.push(meet);
+          if(i === length - 1 && !close){points.push([line.x2,line.y2]);}
       } 
       return points;
-    }
+    },
+    getPointsByDivide(line,divide){
+      var {x1,y1,x2,y2} = line;
+      var deltaX = this.fix(x2 - x1),deltaY = this.fix(y2 - y1);
+      var uX = deltaX / divide,uY = deltaY / divide;
+      var startPoint = [x1,y1];
+      var points = [];
+      for(var i = 1; i < divide; i++){
+        points.push([startPoint[0] + i * uX,startPoint[1] + i * uY])
+      }
+      return points;
+    },
+    setLineByAngle(line,angle){
+      var length = this.getLength(line);
+      if(!length){return line}
+      angle = angle % 360;
+      return this.getLineBySLA([line.x1,line.y1],length,angle); 
+    },
+    setLineByOrtho(line,ortho){
+      var angle = this.getAngle(line);
+      angle = this.getNumberByStep(angle,ortho);
+      return this.setLineByAngle(line,angle)
+    },
+    rotateSpline(points,angle,center){
+      var Points = JSON.parse(JSON.stringify(points));
+      for(var i = 0; i < Points.length; i++){
+        let p = Points[i];
+        let line = {x1:center[0],y1:center[1],x2:p[0],y2:p[1]};
+        let lineAngle = this.getAngle(line);
+        line = this.setLineByAngle(line,angle + lineAngle);
+        p[0] = line.x2;
+        p[1] = line.y2;
+      }
+      return Points;
+    },
+    getInnerMeet(line1,line2){
+      var meet = this.getMeet(line1,line2);
+      if(meet === false){return false}
+      if(line2.x1 < line2.x2){
+        if(meet[0] < line2.x1 || meet[0] > line2.x2){return false} 
+      }
+      else {
+        if(meet[0] < line2.x2 || meet[0] > line2.x1){return false} 
+      }
+      if(line2.y1 < line2.y2){
+        if(meet[1] < line2.y1 || meet[1] > line2.y2){return false} 
+      }
+      else {
+        if(meet[1] < line2.y2 || meet[1] > line2.y1){return false} 
+      }
+      if(line1.x1 < line1.x2){
+        if(meet[0] < line1.x1 || meet[0] > line1.x2){return false} 
+      }
+      else {
+        if(meet[0] < line1.x2 || meet[0] > line1.x1){return false} 
+      }
+      if(line1.y1 < line1.y2){
+        if(meet[1] < line1.y1 || meet[1] > line1.y2){return false} 
+      }
+      else {
+        if(meet[1] < line1.y2 || meet[1] > line1.y1){return false} 
+      }
+      return meet;
+    },
+    isPointInPath(points,point){
+      let meets = 0;
+      for(let i = 0; i < points.length; i++){
+        let curentPoint = points[i],nextPoint;
+        if(i === points.length - 1){nextPoint = points[0]}
+        else{nextPoint = points[i + 1]}
+        let meet = this.getInnerMeet({x1:point[0],y1:point[1],x2:9999999999,y2:point[1]},{x1:curentPoint[0],y1:curentPoint[1],x2:nextPoint[0],y2:nextPoint[1]});
+        if(meet !== false){meets++}
+      }
+      return meets % 2 !== 0;
+    },
+    getDXFText(list){
+      var get = {
+        line:function({x1,y1,x2,y2}){
+          var line = '';
+          line +=
+            "LINE" + "\r\n" +
+            "8" + "\r\n" +
+            "1" + "\r\n" +
+            "62" + "\r\n" +
+            "0" + "\r\n" +
+            "10" + "\r\n" +
+            (x1) + "\r\n" +
+            "20" + "\r\n" +
+            (y1) * -1 + "\r\n" +
+            "30" + "\r\n" +
+            "0.0" + "\r\n" +
+            "11" + "\r\n" +
+            (x2) + "\r\n" +
+            "21" + "\r\n" +
+            (y2) * -1 + "\r\n" +
+            "31" + "\r\n" +
+            "0.0" + "\r\n" +
+            "0" + "\r\n";
+          return line;
+        },
+        circle:function({x,y,radius}){
+          var circle = '';
+          circle +=
+            "CIRCLE" + "\r\n" +
+            "8" + "\r\n" +
+            "1" + "\r\n" +
+            "62" + "\r\n" +
+            "0" + "\r\n" +
+            "10" + "\r\n" +
+            (x) + "\r\n" +
+            "20" + "\r\n" +
+            (y) * -1 + "\r\n" +
+            "30" + "\r\n" +
+            "0.0" + "\r\n" +
+            "40" + "\r\n" +
+            (radius) + "\r\n" +
+            "0" + "\r\n";
+          return circle;
+        },
+        rectangle:function({start,end}){
+          var [x1,y1] = start,[x2,y2] = end;
+          var rectangle = '';
+          rectangle += this.line({x1:x1,y1:y1,x2:x2,y2:y1});
+          rectangle += this.line({x1:x2,y1:y1,x2:x2,y2:y2});
+          rectangle += this.line({x1:x2,y1:y2,x2:x1,y2:y2});
+          rectangle += this.line({x1:x1,y1:y2,x2:x1,y2:y1});
+          return rectangle;
+        },
+        arc:function({x,y,radius,startAngle,endAngle}){
+          var arc = '';
+          arc +=
+            "ARC" + "\r\n" +
+            "8" + "\r\n" +
+            "1" + "\r\n" +
+            "62" + "\r\n" +
+            "0" + "\r\n" +
+            "10" + "\r\n" +
+            (x) + "\r\n" +
+            "20" + "\r\n" +
+            (y) * -1 + "\r\n" +
+            "30" + "\r\n" +
+            "0.0" + "\r\n" +
+            "40" + "\r\n" +
+            (radius) + "\r\n" +
+            "50" + "\r\n" +
+            (startAngle) + "\r\n" +
+            "51" + "\r\n" +
+            (endAngle) + "\r\n" +
+            "0" + "\r\n";
+          return arc;
+        }
 
-    this.getLineBySLA = (p1,length,angle)=>{  
-      if(!length){return [p1,p1]}
-      return [p1,[p1[0]+(Math.cos(angle * Math.PI / 180) * length),p1[1] + (Math.sin(angle * Math.PI / 180) * length)]];
-    }
-
-    this.shiftLine = (p1,p2,value)=>{
-      if(value === 0){return {p1,p2}}
-      var angle,line,deltaX,deltaY;
-      var length = this.getLength(p1,p2);
-      if(value > 0){
-        angle = this.getAngle(p1,p2);
-        line = this.getLineBySLA(p1,length + value,angle);  
-        deltaX = line.p2[0] - p2[0];
-        deltaY = line.p2[1] - p2[1];
       }
-      else{
-        angle = this.getAngle(p2,p1);
-        line = this.getLineBySLA(p2,length + Math.abs(value),angle);  
-        deltaX = line.p2[0] - p1[0];
-        deltaY = line.p2[1] - p1[1];
+      var entities = '';
+      for(var i = 0; i < list.length; i++){
+        var {type} = list[i];
+        entities += get[type](list[i])
       }
-      return [[p1[0] + deltaX,p1[1] + deltaY],[p2[0] + deltaX,p2[1] + deltaY]]
+      var dxfText =
+      "0" + "\r\n" +
+      "SECTION" + "\r\n" +
+      "2" + "\r\n" +
+      "ENTITIES" + "\r\n" +
+      "0" + "\r\n";
+      dxfText+= entities;      
+      dxfText +=
+      "ENDSEC" + "\r\n" +
+      "0" + "\r\n" +
+      "EOF";
+      return dxfText;
     }
-    this.setLineLength = (p1,p2,length,position = 'center')=>{
-      if(position === 'end'){
-        var angle = this.getAngle(p1,p2);
-        var newLine = this.getLineBySLA(p1,length,angle);
-        return {p1,p2:newLine.p2}
-      }
-      if(position === 'start'){
-        var angle = this.getAngle(p2,p1);
-        var newLine = this.getLineBySLA(p2,length,angle);
-        return {p1:newLine.p2,p2}
-      }
-      var avg = this.getAvg([p1,p2]);
-      var endAngle = this.getAngle(avg,p2);
-      var endNewLine = this.getLineBySLA(avg,length / 2,endAngle);
-      var startAngle = this.getAngle(avg,p1);
-      var startNewLine = this.getLineBySLA(avg,length / 2,startAngle);
-      return {p1:startNewLine.p2,p2:endNewLine.p2}
-    }
-    this.rotatePoints = (points,angle,center)=>{
-      var Points = [];
-      for(var i = 0; i < points.length; i++){
-        var p = points[i];
-        var originalAngle = this.getAngle(center,p);
-        var Angle = originalAngle + angle;
-        Points.push(this.rotatePoint(p,Angle,center)) 
-      }
-      return Points
-    }
-    this.rotatePoint = (p,angle,center,offset)=>{
-      if(offset){
-        var originalAngle = this.getAngle(center,p);
-        angle += originalAngle;
-      }
-      var length = this.getLength(center,p);
-      var line = this.getLineBySLA(center,length,angle);
-      return line.p2;
-    }
-    this.getDistanceOfPointAndLine = (p1,p2,p)=>{
-      var point = this.getPrependicularPointToLine(p1,p2,p);
-      return this.getLength(p,point);
-    }
-    this.setDistanceOfPointFromLine = (p1,p2,p,distance)=>{
-      var prep = this.getPrependicularPointToLine(p1,p2,p);
-      return this.getPrependicularPointFromLine(p1,p2,prep,distance)
-    }
+  };
+  return {
+    fix:a.fix,
+    getNumberByStep:a.getNumberByStep,
+    getLength:a.getLength,
+    getAvg:a.getAvg,
+    getDip:a.getDip,
+    getPrepDip:a.getPrepDip,
+    getYOnLineByX:a.getYOnLineByX,
+    getXOnLineByY:a.getXOnLineByY,
+    getMeet:a.getMeet,
+    getPrepToLine:a.getPrepToLine,
+    getPrepFromLine:a.getPrepFromLine,
+    getAngle:a.getAngle,
+    getCos:a.getCos,
+    getSin:a.getSin,
+    getLineBySLA:a.getLineBySLA,
+    setLineByLength:a.setLineByLength,
+    getParallelLine:a.getParallelLine,
+    getPointsByDivide:a.getPointsByDivide,
+    setLineByAngle:a.setLineByAngle,
+    setLineByOrtho:a.setLineByOrtho,
+    rotateSpline:a.rotateSpline,
+    getInnerMeet:a.getInnerMeet,
+    isPointInPath:a.isPointInPath,
+    getDXFText:a.getDXFText
   }
-}
-const {
-  getAvg,getDip,getArcBy3Points,getLength,getAngle,getPointOfLine,
-  getMeet,divide,getPrependicularPointToLine,getPrependicularPointFromLine,getParallelLine,getLineBySLA,shiftLine,setLineLength,rotatePoints,rotatePoint,getDistanceOfPointAndLine,setDistanceOfPointFromLine
-} = new RGeometric();
-  
-export {
-  getAvg,getDip,getArcBy3Points,getLength,getAngle,getPointOfLine,
-  getMeet,divide,getPrependicularPointToLine,getPrependicularPointFromLine,getParallelLine,getLineBySLA,shiftLine,setLineLength,rotatePoints,rotatePoint,getDistanceOfPointAndLine,setDistanceOfPointFromLine
 }
