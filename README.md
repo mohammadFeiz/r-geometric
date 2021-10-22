@@ -38,7 +38,14 @@ let meet = RGeometric.getMeet({x1:10,y1:10,x2:20,y2:-40},{x1:100,y1:-10,x2:40,y2
 ### getPrepToLine()
 ##### get a line object and a point array as parameter and returns a point array as prependicular from point to line.
 ``` javascript
-let meet = RGeometric.getPrepToLine({x1:10,y1:10,x2:20,y2:-40},[-60,-40]);
+let prep = RGeometric.getPrepToLine({x1:10,y1:10,x2:20,y2:-40},[-60,-40]);
 //returns [x, y]
+```
+
+### getXOnLineByY()
+##### get a line object and x value as parameter and returns a number as y .
+``` javascript
+let x = RGeometric.getXOnLineByY({x1:10,y1:10,x2:20,y2:-40},20);
+//returns y
 ```
 
