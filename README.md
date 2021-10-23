@@ -47,7 +47,7 @@ let prep = RGeometric.getPrepToLine({x1:10,y1:10,x2:20,y2:-40},[-60,-40]);
 ##### get a line object and x value as parameters and returns a number as y .
 ``` javascript
 let x = RGeometric.getXOnLineByY({x1:10,y1:10,x2:20,y2:-40},20);
-//returns y
+//returns x
 ```
 [![alt text](/images/getXOnLineByY.jpg)]
 ### getYOnLineByX()
