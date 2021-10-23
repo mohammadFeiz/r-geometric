@@ -57,6 +57,7 @@ let y = RGeometric.getYOnLineByX({x1:10,y1:10,x2:20,y2:-40},20);
 ```
 ### getLineBySLA()
 ##### get a point array and length value and angle as parameters and returns a line object .
+##### in this example this function returns a line object by start from 0,0 and length equal 20 and angle equal 45.
 ``` javascript
 let y = RGeometric.getYOnLineByX([0,0],20,45);
 //returns {x1:...,y1:...,x2:...,y2:...}
@@ -64,6 +65,7 @@ let y = RGeometric.getYOnLineByX([0,0],20,45);
 
 ### getPointsByDivide()
 ##### get a line object and divide value as parameters and returns midpoints array .
+##### in this example , This function divides the line into 6 equal parts by return 5 mid points.
 ``` javascript
 let midPoints = RGeometric.getPointsByDivide({x1:0,y1:0,x2:100,y2:60},6);
 //returns [[x,y],[x,y],[x,y],[x,y],[x,y]]
