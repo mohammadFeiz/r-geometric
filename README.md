@@ -73,3 +73,10 @@ let midPoints = RGeometric.getPointsByDivide({x1:0,y1:0,x2:100,y2:60},6);
 //returns [[x,y],[x,y],[x,y],[x,y],[x,y]]
 ```
 [![alt text](/images/getPointsByDivide.jpg)]
+### getParallelPoints()
+##### get array of points and offset value (number) as parameters and returns parallel points array .
+``` javascript
+let parallelPoints = RGeometric.getParallelPoints([[x1,y1],[x2,y2],[x3,y3],[x4,y4],[x5,y5]],30);
+//returns [[a1,b2],[a2,b2],[a3,b3],[a4,b4],[a5,b5]]
+```
+[![alt text](/images/getParallelPoints.jpg)]
